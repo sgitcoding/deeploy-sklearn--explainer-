@@ -1,0 +1,108 @@
+
+
+# import libraries
+
+# 1. to handle the data
+import pandas as pd
+import numpy as np
+
+# 2. To Viusalize the data
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+#3.To split the data 
+from sklearn.model_selection import train_test_split
+
+import keras
+from keras import layers
+from keras.models import Sequential
+from keras.layers import Dense
+
+import tensorflow as tf
+
+
+#to test the model 
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_score , recall_score , accuracy_score , f1_score
+
+import shap
+import dill
+
+import keras_tuner 
+from keras_tuner.tuners import RandomSearch
+
+# Load data and train a model
+df = pd.read_csv('heart_disease_health_indicators_BRFSS2015.csv')
+
+x = df.drop('HeartDiseaseorAttack', axis =1)
+y = df['HeartDiseaseorAttack']
+
+#splitting the data for training and testing the data 
+
+x_train, x_test , y_train, y_test=train_test_split(x, y, random_state=42 , test_size=0.25, shuffle= True )
+
+print(x_train.shape)
+print(x_test.shape)
+print(y_train.shape)
+print(y_test.shape)
+
+#hyperparameter tuning using keras_tuner 
+def build_model(hp):
+    model = keras.Sequential()
+    model.add(layers.Dense(
+        units=hp.Choice('units', [32,64,128,256,512,600,700,800, 900]),
+        activation='relu'))
+    model.add(layers.Dense(1, activation='sigmoid'))
+    model.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    return model
+
+tuner_search = RandomSearch(
+    build_model,
+    objective='val_accuracy',
+    max_trials=5,
+    directory='output_7',
+    project_name="heart_disease_prediction_7"
+)
+
+tuner_search.search(x_train, y_train, epochs=2, validation_data=(x_test, y_test))
+
+best_models = tuner_search.get_best_models(num_models=1)
+
+test_loss, test_acc = best_models[0].evaluate(x_test, y_test)
+print('Test accuracy:', test_acc)
+
+predictions = best_models[0].predict(x_test)
+# For binary classification, use a threshold of 0.5
+predicted_classes = (predictions > 0.5).astype(int).flatten()
+
+
+accuracy = accuracy_score(y_test,predicted_classes)
+print('Accuracy: %f' % accuracy)
+# precision tp / (tp + fp)
+precision = precision_score(y_test,predicted_classes,average='weighted')
+print('Precision: %f' % precision)
+# recall: tp / (tp + fn)
+recall = recall_score(y_test,predicted_classes,average='weighted')
+print('Recall: %f' % recall)
+# f1: 2 tp / (2 tp + fp + fn)
+f1 = f1_score(y_test,predicted_classes,average='weighted')
+print('F1 score: %f' % f1)
+
+
+# Create a sample for the SHAP Kernel Explainer
+x_train_sample = shap.sample(x_train, 100)  # Use a sample of the training data
+
+# Create the SHAP Kernel Explainer
+explainer = shap.KernelExplainer(best_models[0].predict, x_train_sample)
+
+# Save the explainer
+with open("explainer.dill", "wb") as f:
+    dill.dump(explainer, f)
+
+# Load the explainer (if needed)
+with open("explainer.dill", "rb") as f:
+    loaded_explainer = dill.load(f)
+
+
