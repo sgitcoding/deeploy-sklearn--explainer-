@@ -28,8 +28,6 @@ from sklearn.metrics import precision_score , recall_score , accuracy_score , f1
 import shap
 import dill
 
-import keras_tuner 
-from keras_tuner.tuners import RandomSearch
 
 # Load data and train a model
 df = pd.read_csv('heart_disease_health_indicators_BRFSS2015.csv')
