@@ -108,3 +108,9 @@ print('Recall: %f' % recall)
 # f1: 2 tp / (2 tp + fp + fn)
 f1 = f1_score(y_test,predicted_classes,average='weighted')
 print('F1 score: %f' % f1)
+
+import joblib
+joblib.dump(model, 'model.joblib')
+predictions = final_model.predict(x_test)
+predictions
+final_model = joblib.load('model.joblib')
