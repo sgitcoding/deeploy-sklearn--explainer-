@@ -13,13 +13,6 @@ import seaborn as sns
 #3.To split the data 
 from sklearn.model_selection import train_test_split
 
-import keras
-from keras import layers
-from keras.models import Sequential
-from keras.layers import Dense
-
-import tensorflow as tf
-
 
 #to test the model 
 from sklearn.metrics import confusion_matrix
@@ -37,36 +30,42 @@ y = df['HeartDiseaseorAttack']
 
 #splitting the data for training and testing the data 
 
-x_train, x_test , y_train, y_test=train_test_split(x, y, random_state=42 , test_size=0.25, shuffle= True )
+x_train, x_test , y_train, y_test=train_test_split(x, y, random_state=200, test_size=0.25, shuffle= True )
 
 print(x_train.shape)
 print(x_test.shape)
 print(y_train.shape)
 print(y_test.shape)
 
-# Define model
 
-model = Sequential()
-model.add(Dense(500, input_dim=21, activation= "relu"))
-model.add(Dense(100, activation= "relu"))
-model.add(Dense(1))
-model.summary() #Print model Summary
-model.compile(loss = "binary_crossentropy", optimizer = "adam", metrics = ["Accuracy"]  )
-model.fit(x_train, y_train, epochs = 10)
-predictions = model.predict(x_test)
-# For binary classification, use a threshold of 0.5
-predicted_classes = (predictions > 0.5).astype(int).flatten()
-accuracy = accuracy_score(y_test,predicted_classes)
-print('Accuracy: %f' % accuracy)
-# precision tp / (tp + fp)
-precision = precision_score(y_test,predicted_classes,average='weighted')
-print('Precision: %f' % precision)
-# recall: tp / (tp + fn)
-recall = recall_score(y_test,predicted_classes,average='weighted')
-print('Recall: %f' % recall)
-# f1: 2 tp / (2 tp + fp + fn)
-f1 = f1_score(y_test,predicted_classes,average='weighted')
-print('F1 score: %f' % f1)
+from sklearn.tree import DecisionTreeClassifier 
+
+
+modeldc =DecisionTreeClassifier()
+modeldc.fit(x_train, y_train)
+
+print("train shape: " + str(x_train.shape))
+print("score on test: " + str(modeldc.score(x_test, y_test)))
+print("score on train: "+ str(modeldc.score(x_train, y_train)))
+
+dt_y_predicts = modeldc.predict(x_test)
+
+
+accuracy = accuracy_score(y_test, dt_y_predicts)
+print('Accuracy = '+ str(accuracy))
+
+f1 = f1_score(y_test, dt_y_predicts)
+print('f1 score = '+ str(f1))
+
+recall = recall_score(y_test, dt_y_predicts)
+print('recall = '+ str(recall))
+
+precision = precision_score(y_test, dt_y_predicts)
+print('precision = '+ str(precision))
+
+dt_cm = confusion_matrix(y_test, dt_y_predicts)
+print('confusion matrix'+ str(dt_cm))
+
 
 
 # Create a sample for the SHAP Kernel Explainer
@@ -82,5 +81,4 @@ with open("explainer.dill", "wb") as f:
 # Load the explainer (if needed)
 with open("explainer.dill", "rb") as f:
     loaded_explainer = dill.load(f)
-
 
